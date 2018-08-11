@@ -1,0 +1,675 @@
+
+---
+title: Shark Attack Research
+author: "Project Team 3 : Shashikant Jaiswal, Rashi Jain, Priyanka Taneja, Ryan Scolaro"
+date: "31 July 2018"
+output: 
+  html_document:
+    toc: true
+    toc_float: 
+      collapsed: false
+      
+    
+    
+      
+---
+
+<center>
+![](UNCC_Logo.png)
+</center><br><br>
+
+
+#**1. Overview**
+
+##**1.1 Introduction**
+This analysis is to continue the research on the presence of sharks during the tourist seasons in middle Atlantic and south eastern coastal waters using data mining following the Cross Industry Standard Process for data mining(CRISP-DM). Our study will focus on the analysis of existing data from the International Shark Attack database, weather data from NOAA and calculated moon phase dates. Based on the understanding, a model will be built to uncover various interesting facts about the impact of environmental factors such as moon phases, wind speed and wind direction on creating the favorable conditions for the sharks near the shore. The results of the study could be used to predict the likelihood of Sharks near the shore which could be used as the basis for an application or dashboard which would serve as a warning system near coastal waters with higher plausibility of human activity such as swimming, fishing etc. The Shark Protection Organizations can also make use of such a warning system to take necessary preventive measures for protecting sharks from being slaughtered by humans and thereby saving them from possible extinction.
+
+<br>
+
+##**1.2 Domain Understanding**
+It is possible to lessen the likelihood of shark incidents by understanding shark attacks. Humans need to recognize and avoid potentially dangerous situations in the water. The individual case histories provide insights about specific geographical areas and their indigenous species of sharks. However, when all known case histories worldwide are examined, much is revealed about species behavior, and specific patterns emerge. 
+Some accidents are motivated by a displacement or territorial behavior when a shark feels threatened; still others are the result of the shark responding to sensory predatory input (i.e., overwhelmed by the presence of many fishes) and environmental conditions (murky water), which may cause them to respond in a reflexive response to stimuli. 
+
+<br>
+**1.2.1 Moon Phases**
+When the moon and sun align, known as full or new moon, the pull is at its strongest, causing the tides to be at their highest and lowest. This is known as spring tides. The change from high tides to low tides and back again happens very quickly which may cause sharks to move in areas closer to where people swim when the tide is low. The effect on tides occurs over a span of days leading up to the change in the lunar cycle. The effect duration, therefore, is not on the day that is typically depicted as the new or full moon, but can span several days before and after favors shark attacks. 
+
+<br>
+**1.2.2 Weather Data**
+How shark deals with the extreme weather. As the temperature of the water in-creases, the sharks tend to move into new locations where they will be more comfortable. This means they can be in areas where people are fishing, boating, and swimming.
+
+<br><br>
+
+##**1.3 Project Links**
+Click here for the
+[Project Link](http://www.sharkattackfile.net/)
+
+<br><br>
+
+#**2. Data Understanding**
+
+##**2.1 Data Collection**
+ 
+**Shark Data : ** The principal data source for the incident of shark attack in North Carolina, South Carolina, Virginia and Georgia was taken from the incident log of the Shark research Institute defined as the "Global Shark Attack File" (GSAF). The project constrained the study of incidences of shark attacks to be limited from 2016 to 2017 for the months of May to September and from months of May to July for 2018. Since the data of attack were very less during these years, inorder to balance the data more attack cases were added from 2009-2016 to the dataset. 
+<br>
+**Moon phases:** Moon phases data for the selected month is collected by using lunar library of R.
+
+```{r}
+#library(lunar)
+#shark.data$moonphase <- lunar.phase(as.Date(shark.data$Date),name=8) 
+```
+
+Following values are achieved by running the code:
+Waxing Crescent, First Quarter, Waxing Gibbous, Full moon, Waning Gibbous, Third Quarter, and finally Waxing Crescent. 
+
+**Weather Data :**
+Wind speed, Daily Average wind direction, Daily precipitation, Daily Average dew point temperature, Daily Average temp are collected from Weather Underground Datasource.
+
+<br>
+<br>
+
+#**3. Strategy**
+
+##**3.1 Methods**
+The methodology adopted for the project was the usage of CRISP-DM model.<br>
+The data is collected from different sources and merged with global shark attack file primarily by date. The global shark attack files shows only the dates when attack happened, so in order to better train the model about the presence or the absence of the shark near sea shore, more dates in the dataset are populated and the moon phase and weather conditions of specific region i.e. buxton is recorded so as to gain knowledge based on documented attacks.
+If the attack did not happen then the corresponding columns are filled with NA values.
+
+<br>
+
+#**4. Exploratory Data Analysis**
+
+```{r,echo=FALSE,include=FALSE}
+library(DataExplorer)
+library(mice)
+library(VIM)
+```
+##**4.1 Summary of Dataset**
+
+```{r}
+
+shark.data <- read.csv(file="SharkAttackData31stJuly2018_V4.csv", header=T, na.strings = c("NA",""," "), stringsAsFactors = F)
+attach(shark.data)
+#library(lunar)
+str(shark.data)
+shark.data <- shark.data[,-c(5,7,8,11,12,13,14,15,16,18,19,21,22)]
+
+#shark.data$moonphase <- lunar.phase(as.Date(shark.data$Date),name=8)
+summary(shark.data)
+
+
+```
+
+<br>
+
+##**4.2 Missing Data**
+The missing data observed for the dataset is as follows:
+```{r}
+plot_missing(shark.data)
+```
+<br>
+
+##**4.3 Location**
+It can be seen from the below graph that the most vulnerable county for Shark Attack is **Horry and Charleston** among the locations of South and North Carolina.
+```{r, echo=FALSE}
+shark.data$County[grepl(pattern="Charleston",x=shark.data$Location) ] <- "Charleston"
+shark.data$County[grepl(pattern="Carteret",x=shark.data$Location) ] <- "Carteret"
+shark.data$County[grepl(pattern= "Horry",x=shark.data$Location)] <- "Horry"
+shark.data$County[grepl(pattern="Beaufort",x=shark.data$Location)  ] <- "Beaufort"
+shark.data$County[grepl(pattern="Georgetown",x=shark.data$Location) ] <- "Georgetown"
+shark.data$County[grepl(pattern="Brunswick",x=shark.data$Location) ] <- "Brunswick"
+shark.data$County[grepl(pattern="Currituck",x=shark.data$Location) ] <- "Currituck"
+shark.data$County[grepl(pattern="Hyde",x=shark.data$Location) ] <- "Hyde"
+shark.data$County[grepl(pattern="Dare",x=shark.data$Location) ] <- "Dare"
+shark.data$County[grepl(pattern="Pender",x=shark.data$Location) ] <- "Pender"
+shark.data$County[grepl(pattern="New Hanover",x=shark.data$Location) ] <- "New Hanover"
+shark.data$County[grepl(pattern="Onslow",x=shark.data$Location) ] <- "Onslow"
+shark.data$County[grepl(pattern="Colleton",x=shark.data$Location) ] <- "Colleton"
+
+library(ggplot2)
+
+sharkAtackLoc <- shark.data$County[shark.data$Attack== "Yes"]
+sharkAtackLoc
+# counts
+ggplot(data.frame(sharkAtackLoc), aes(x=sharkAtackLoc)) +
+  geom_bar()+theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+<br>
+
+##**4.4 Wind Direction**
+The given data showed that maximum number of Shark attack occured when the wind was flowing in **SSW and SW**.
+<br>**When Attack Occurred**
+```{r}
+windDirection <- shark.data$Wd.Direction[shark.data$Attack== "Yes"]
+windDirection
+# counts
+ggplot(data.frame(windDirection), aes(x=windDirection)) +
+  geom_bar()+theme(axis.text.x = element_text(angle = 90, hjust = 1)) + ggtitle("Wind Direction for Attack='Y'")
+
+```
+**Overlayed Bar Chart for Wind Direction and Attack**
+```{r}
+ggplot() +
+  geom_bar(data = shark.data,
+           aes(x = factor(shark.data$Wd.Direction),
+               fill = factor(shark.data$Attack)),
+           position = "stack") +
+  scale_x_discrete("Wind Direction") +
+  scale_y_continuous("Count") +
+  guides(fill=guide_legend(title="Attack")) +
+  scale_fill_manual(values=c("blue", "red")) + ggtitle("Overlayed bar graph for Wind Direction")
+```
+
+
+<br>
+
+##**4.5 Exploring DailyAverageTemperature, DailyAverageDewPotTemp, DailyAverageWdSpeed, and DailyPrecipitation**
+For inital data exploration we used the same process on these four variables. First we plot a histogram for all the data of each variable to check its general shape. Since the variables are all numeric our next step is to bin them into 'Low', 'Medium', and 'High' catagories using equal width binning. <i>Refer to section 5.3 for binning</i>
+<br>
+
+##**4.6 Moon Phases**
+Maximum shark attacks happened in New Moon phase.
+During the waxing gibbous and waning crescent phases, the Moon is approaching its full and new phases, respectively. 
+Because of this, the resulting tidal bulges will increase in size until they reach their maximum during the spring tides.
+```{r}
+
+##### selecting the records in which attack has happened for EDA
+shark.data_attack <- subset(shark.data, shark.data$Attack=="Yes")
+plot_bar(shark.data_attack$moonphase)
+
+```
+
+<br>
+
+##**4.7 Density Graph for the Shark Attack Data**
+```{r}
+plot_density(shark.data)
+```
+
+<br>
+
+
+##**4.8 Understanding the Correlation**
+
+Checking for the correlation between the attributes.
+
+```{r}
+plot(shark.data$DailyPrecipitation, shark.data$DailyAverageTemperature)
+plot(shark.data$DailyAverageDewPotTemp, shark.data$DailyPrecipitation)
+plot(shark.data$DailyAverageDewPotTemp, shark.data$DailyAverageTemperature)
+```
+
+DailyAverageTemperature and DailyAverageDewPotTemp are probably related as the average temperature should influence the dew temperature it makes sense to check for a correlation between the two.
+```{r}
+plot_correlation(shark.data[,c("DailyAverageTemperature", "DailyAverageDewPotTemp")], use = "pairwise.complete.obs")
+
+```
+The plot indicates that the two variables are indeed correlated strongly so it is likely that one of them may be left out during modeling.
+
+<br><br>
+
+#**5. Data Preparation**
+The data for Shark Attack has been colleced for three years during the tourist period from various sources and have been integrated. Raw data was noisy and unfit to run models on them.  Country column was a unary attribute with value USA for all the records and can be easily removed. Therefore, following data preparation steps were taken for data cleaning:
+<br>
+
+
+##**5.1 Handling Outliers**
+Our first setep was to check for missing values in the four columns.
+
+```{r}
+sapply(shark.data[,c("DailyAverageTemperature", "DailyAverageDewPotTemp", "DailyAverageWdSpeed", "DailyPrecipitation")], function(x) sum(is.na(x)))
+
+```
+
+We can see that there are some missing values in each column. We were unable to find weather data for a little over a period of a little over a month. That means these rows need to removed for most of our modeling as we are mainly analyzing weather data so they contribute nothing.
+
+
+After removing the rows with missing data we check each variable for outliers using the zscore method.
+
+**DailyAverageTemperature**
+
+```{r}
+shark.data.removedNAs <- shark.data[!is.na(shark.data$DailyAverageTemperature),]
+shark.data.removedNAs$zscore.DailyAverageTemperature <- (shark.data.removedNAs$DailyAverageTemperature - mean(shark.data.removedNAs$DailyAverageTemperature))/sd(shark.data.removedNAs$DailyAverageTemperature)
+cat("Number of lower range outliers: ", length(shark.data.removedNAs$zscore.DailyAverageTemperature[shark.data.removedNAs$zscore.DailyAverageTemperature < -3]))
+cat("Number of upper range outliers: ", length(shark.data.removedNAs$zscore.DailyAverageTemperature[shark.data.removedNAs$zscore.DailyAverageTemperature > 3]))
+
+```
+
+**DailyAverageDewPotTemp**
+
+```{r}
+shark.data.removedNAs<- shark.data[!is.na(shark.data$DailyAverageDewPotTemp),]
+shark.data.removedNAs$zscore.DailyAverageDewPotTemp <- (shark.data.removedNAs$DailyAverageDewPotTemp - mean(shark.data.removedNAs$DailyAverageDewPotTemp))/sd(shark.data.removedNAs$DailyAverageDewPotTemp)
+cat("Number of lower range outliers: ", length(shark.data.removedNAs$zscore.DailyAverageDewPotTemp[shark.data.removedNAs$zscore.DailyAverageDewPotTemp < -3]))
+cat("Number of upper range outliers: ", length(shark.data.removedNAs$zscore.DailyAverageDewPotTemp[shark.data.removedNAs$zscore.DailyAverageDewPotTemp > 3]))
+
+```
+
+**DailyAverageWdSpeed**
+
+```{r}
+
+shark.data.removedNAs<- shark.data[!is.na(shark.data$DailyAverageWdSpeed),]
+shark.data.removedNAs$zscore.DailyAverageWdSpeed <- (shark.data.removedNAs$DailyAverageWdSpeed - mean(shark.data.removedNAs$DailyAverageWdSpeed))/sd(shark.data.removedNAs$DailyAverageWdSpeed)
+cat("Number of lower range outliers: ", length(shark.data.removedNAs$zscore.DailyAverageWdSpeed[shark.data.removedNAs$zscore.DailyAverageWdSpeed < -3]))
+cat("Number of upper range outliers: ", length(shark.data.removedNAs$zscore.DailyAverageWdSpeed[shark.data.removedNAs$zscore.DailyAverageWdSpeed > 3]))
+
+```
+
+**DailyPrecipitation**
+
+```{r}
+shark.data.removedNAs<- shark.data[!is.na(shark.data$DailyPrecipitation),]
+shark.data.removedNAs$zscore.DailyPrecipitation <- (shark.data.removedNAs$DailyPrecipitation - mean(shark.data.removedNAs$DailyPrecipitation))/sd(shark.data.removedNAs$DailyPrecipitation)
+cat("Number of lower range outliers: ", length(shark.data.removedNAs$zscore.DailyPrecipitation[shark.data.removedNAs$zscore.DailyPrecipitation < -3]))
+cat("Number of upper range outliers: ", length(shark.data.removedNAs$zscore.DailyPrecipitation[shark.data.removedNAs$zscore.DailyPrecipitation > 3]))
+
+```
+
+All four columns have very few outliers so we decided to check the actual max and min values in each column.
+
+```{r}
+summary(shark.data.removedNAs[,c("DailyAverageTemperature", "DailyAverageDewPotTemp", "DailyAverageWdSpeed", "DailyPrecipitation")])
+
+```
+
+None of the max or min values are out of the ordinary for weather patterns so it is very likely they are correct. For this reason we decided to leave the outliers alone for now, altough we may remove them at a later stage if needed.
+
+<br>
+
+##**5.2 Missing Data Handling**
+Data had some missing values which was a hinderance for normalization of the data. In order to make data fit for modelling these missing data was replaced by **Imputed Values** using Mice.
+<br>
+
+
+```{r}
+#Store the Numeric Columns with Missing Values in temporary dataset
+str(shark.data)
+shark.data.temp <- shark.data[,-c(1,2,3,4,5,6,7,8,9,10,15,16,17,18,19)] 
+# added column 2(date) which will be used to merge imputed data with original data
+sapply(shark.data.temp, function(x) sum(is.na(x)))
+
+#Run Mice to impute the data
+md.pattern(shark.data.temp)
+```
+**Mice Plot for Missing Data**
+```{r}
+mice_plot <- aggr(shark.data.temp, col=c('navyblue','yellow'),
+numbers=TRUE, sortVars=TRUE,
+labels=names(shark.data.temp), cex.axis=.7,
+gap=3, ylab=c("Proportion of Missingness","Missingness Pattern"))
+```
+```{r,include=FALSE}
+imputed_Data <- mice(shark.data.temp, m=5, maxit = 40, method = 'pmm', seed = 500)
+imputed_Data
+```
+```{r}
+#Store the data with imputed values in complete_data
+complete_data=complete(imputed_Data,5)
+md.pattern(complete_data)
+sapply(complete_data, function(x) sum(is.na(x)))
+
+#Add Column for imputed values the imputed values with the current dataset
+shark.data$DailyAverageDewPotTemp_imputed <- complete_data$DailyAverageDewPotTemp
+shark.data$DailyPrecipitation_imputed <- complete_data$DailyPrecipitation
+```
+
+<br>
+
+<br>
+
+##**5.3 Binning the data** 
+Numeric data present in the dataset such as DailyAverageTemperature, DailyAverageDewPotTemp, DailyAverageWdSpeed, and DailyPrecipitation has been bined into three levels: low, medium and high. 
+We decided to bin these variables for readbility in the next step as well as if we decide to use a model that requires binning later on. Next we create a bar plot of the binned data for all values as well as a bar plot for only the days when a shark attack occurred.
+
+**5.3.1 DailyAverageTemperature**
+```{r}
+plot_histogram(shark.data$DailyAverageTemperature, title ="Histogram for Daily Avg. Temp. after imputation")
+shark.data.temperature <- kmeans(shark.data$DailyAverageTemperature , centers = 3)
+shark.data.temperature $centers
+whichbin <- shark.data.temperature$cluster
+shark.data$binned.DailyAverageTemperature <- whichbin
+shark.data$binned.DailyAverageTemperature[shark.data$binned.DailyAverageTemperature == 1] <- "Low"
+shark.data$binned.DailyAverageTemperature[shark.data$binned.DailyAverageTemperature == 2] <- "High"
+shark.data$binned.DailyAverageTemperature[shark.data$binned.DailyAverageTemperature == 3] <- "Medium"
+par(mfrow=c(1,2))
+barplot(table(shark.data$binned.DailyAverageTemperature), main="All Rows")
+barplot(table(shark.data$binned.DailyAverageTemperature[shark.data$Attack == "Yes"]), main="Attacks Only")
+
+
+```
+
+**5.3.2 DailyAverageDewPotTemp**
+```{r}
+plot_histogram(shark.data$DailyAverageDewPotTemp_imputed, title="Histogram for Daily Avg. Dew Point after imputation")
+shark.data.dewtemperature <- kmeans(shark.data$DailyAverageDewPotTemp_imputed , centers = 3)
+shark.data.dewtemperature $centers
+whichbin <- shark.data.dewtemperature$cluster
+shark.data$binned.DailyAverageDewPotTemp <- whichbin
+shark.data$binned.DailyAverageDewPotTemp[shark.data$binned.DailyAverageDewPotTemp == 1] <- "Low"
+shark.data$binned.DailyAverageDewPotTemp[shark.data$binned.DailyAverageDewPotTemp == 2] <- "High"
+shark.data$binned.DailyAverageDewPotTemp[ shark.data$binned.DailyAverageDewPotTemp == 3] <- "Medium"
+par(mfrow=c(1,2))
+barplot(table(shark.data$binned.DailyAverageDewPotTemp), main="All Rows")
+barplot(table(shark.data$binned.DailyAverageDewPotTemp[shark.data$Attack == "Yes"]), main="Attacks Only")
+
+
+```
+
+**5.3.3 DailyAverageWdSpeed**
+```{r}
+plot_histogram(shark.data$DailyAverageWdSpeed, title="Histogram for Daily Avg. Wind Speed after imputation")
+shark.data.windSpeed <- kmeans(shark.data$DailyAverageWdSpeed, centers = 3)
+shark.data.windSpeed $centers
+whichbin <- shark.data.windSpeed$cluster
+shark.data$binned.DailyAverageWdSpeed <- whichbin
+shark.data$binned.DailyAverageWdSpeed[shark.data$binned.DailyAverageWdSpeed == 1] <- "Low"
+shark.data$binned.DailyAverageWdSpeed[shark.data$binned.DailyAverageWdSpeed == 2] <- "High"
+shark.data$binned.DailyAverageWdSpeed[shark.data$binned.DailyAverageWdSpeed == 3] <- "Medium"
+par(mfrow=c(1,2))
+barplot(table(shark.data$binned.DailyAverageWdSpeed), main="All Rows")
+barplot(table(shark.data$binned.DailyAverageWdSpeed[shark.data$Attack == "Yes"]), main="Attacks Only")
+
+
+```
+
+**5.3.4 DailyPrecipitation**
+```{r}
+plot_histogram(shark.data$DailyPrecipitation_imputed, title="Histogram for Daily Avg. Precipitation after imputation")
+shark.data.precipitation <- kmeans(shark.data$DailyPrecipitation_imputed , centers = 3)
+shark.data.precipitation $centers
+whichbin <- shark.data.precipitation$cluster
+shark.data$binned.DailyPrecipitation <- whichbin
+shark.data$binned.DailyPrecipitation[shark.data$binned.DailyPrecipitation == 1] <- "Low"
+shark.data$binned.DailyPrecipitation[shark.data$binned.DailyPrecipitation == 2] <- "High"
+shark.data$binned.DailyPrecipitation[ shark.data$binned.DailyPrecipitation == 3] <- "Medium"
+par(mfrow=c(1,2))
+barplot(table(shark.data$binned.DailyPrecipitation), main="All Rows")
+barplot(table(shark.data$binned.DailyPrecipitation[shark.data$Attack == "Yes"]), main="Attacks Only")
+
+```
+
+The results initially seem to indicate that shark attacks occour more often during dry, hot weather. Upon closer inspection however we can see that the vast majority of the time there is no rain, so naturally shark attacks are more likely to occour when it is dry but the two are probably not related. For temperature our data comes from the summer months so it is mostly hot, although there is more variance than precipitation. Thus it seems reasonable to assume that shark attacks are more likely in warm or hot weather. Wind speed seem  to be relatively evenly spread and so doesn't provide much information.
+
+
+
+
+
+<br>
+
+##**5.4 Correlation among the attributes**
+
+Correlation between the attributes has been calculated and it was observed that DailyAverageTemperature and DailyAverageDewPotTemp are strongly correlated so it is likely that one of them may be left out during modeling.<i>Please refer to EDA section</i> 
+<br>
+
+##**5.5 Normalization**
+Since DailyAverageTemperature, DailyAverageDewPotTemp, DailyAverageWdSpeed, and DailyPrecipitation columns were on different scale making it difficult to compare them.
+Therefore, normalization has been carried out in order to bring them into the same scale.
+
+```{r}
+means = apply(complete_data,2,mean)
+sds = apply(complete_data,2,sd)
+shark.data.normalized = scale(complete_data,center=means,scale=sds)
+shark.data.normalized <- as.data.frame(shark.data.normalized)
+
+shark.data$DailyPrecipitation_normalized <- shark.data.normalized$DailyPrecipitation
+shark.data$DailyAverageDewPotTemp_normalized <- shark.data.normalized$DailyAverageDewPotTemp
+shark.data$DailyAverageWdSpeed_normalized <- shark.data.normalized$DailyAverageWdSpeed
+shark.data$DailyAverageTemperature_normalized <- shark.data.normalized$DailyAverageTemperature
+
+head(shark.data)
+```
+<br>
+
+##**5.6 Principal Component Analysis**
+
+As correlation showed Dew point temperature and average daily temperature are strongly related, we applied PCA which also showed the same results. Using domain knowledge we know, temperature will mostly be high during this durationin North and South Carolina. Therefore we can remove that column.
+```{r}
+d <- shark.data[,c(14,12,16,17)]
+pc <- princomp(d, cor= TRUE,score= TRUE)
+biplot(pc)
+```
+<br>
+
+##**5.7 Calculation of Proportion after undersampling**
+
+The number of records with Attack equal to Yes were 77 in total. This was definitely less than the total number of days taken for the years between the months of May to September. Hence when the GSAF file was combined with the file con-taining all dates it led to a data imbalance problem. In order to solve the problem, a stratified sampling of Attack=No subset was prepared so that 1/3 of records remain with adequate representation for each class. To evaluate the efficiency of the solution applied to the data imbalance problem, undersampling of the records with attack="No" was done and the proportions of wind speed, wind direction and moonphase was compared with the original dataset. 
+
+
+Reading the file which has undersampled data
+```{r include= FALSE}
+shark.data.undersample <- read.csv(file="shark_attack_undersample_dataset.csv", header=T, na.strings = c("NA",""," "), stringsAsFactors = F)
+
+#Calculating proportion of "New" Moonphase before and after undersampling
+new_moon_prop_original    <- (length(shark.data$moonphase[shark.data$moonphase == "New"]) / nrow(shark.data))
+new_moon_prop_undersample <- (length(shark.data.undersample$moonphase[shark.data.undersample$moonphase == "New"]) / nrow(shark.data.undersample))
+
+#Calculating proportion of "Full" Moonphase before and after undersampling
+full_moon_prop_original    <- (length(shark.data$moonphase[shark.data$moonphase == "Full"]) / nrow(shark.data))
+full_moon_prop_undersample <- (length(shark.data.undersample$moonphase[shark.data.undersample$moonphase == "Full"]) / nrow(shark.data.undersample))
+#Calculating proportion of "First Quarter" Moonphase before and after undersampling
+firstQ_moon_prop_original    <- (length(shark.data$moonphase[shark.data$moonphase == "First quarter"]) / nrow(shark.data))
+firstQ_moon_prop_undersample <- (length(shark.data.undersample$moonphase[shark.data.undersample$moonphase == "First quarter"]) / nrow(shark.data.undersample))
+#Calculating proportion of "Waning Gibbous" Moonphase before and after undersampling
+WaningG_moon_prop_original    <- (length(shark.data$moonphase[shark.data$moonphase == "Waning gibbous"]) / nrow(shark.data))
+WaningG_moon_prop_undersample <- (length(shark.data.undersample$moonphase[shark.data.undersample$moonphase == "Waning gibbous"]) / nrow(shark.data.undersample))
+#Calculating proportion of wind direction "SW" before and after undersampling
+SW_Wdirection_prop_original    <- (length(shark.data$moonphase[shark.data$Wd.Direction == "SW"]) / nrow(shark.data))
+SW_Wdirection_prop_undersample <- (length(shark.data.undersample$moonphase[shark.data.undersample$Wd.Direction == "SW"]) / nrow(shark.data.undersample))
+#Calculating proportion of wind direction "SSW" before and after undersampling
+SSW_Wdirection_prop_original    <- (length(shark.data$moonphase[shark.data$Wd.Direction == "SSW"]) / nrow(shark.data))
+SSW_Wdirection_prop_undersample <- (length(shark.data.undersample$moonphase[shark.data.undersample$Wd.Direction == "SSW"]) / nrow(shark.data.undersample))
+#Calculating proportion of wind direction "WSW" before and after undersampling
+WSW_Wdirection_prop_original    <- (length(shark.data$moonphase[shark.data$Wd.Direction == "WSW"]) / nrow(shark.data))
+WSW_Wdirection_prop_undersample <- (length(shark.data.undersample$moonphase[shark.data.undersample$Wd.Direction == "WSW"]) / nrow(shark.data.undersample))
+#Calculating proportion of wind direction "EAST" before and after undersampling
+E_Wdirection_prop_original    <- (length(shark.data$moonphase[shark.data$Wd.Direction == "E"]) / nrow(shark.data))
+E_Wdirection_prop_undersample <- (length(shark.data.undersample$moonphase[shark.data.undersample$Wd.Direction == "E"]) / nrow(shark.data.undersample))
+#Calculating proportion of wind speed "High" before and after undersampling
+High_Wspeed_prop_original    <- (length(shark.data$moonphase[shark.data$binned.DailyAverageWdSpeed == "High"]) / nrow(shark.data))
+High_Wspeed_prop_undersample <- (length(shark.data.undersample$moonphase[shark.data.undersample$binned.DailyAverageWdSpeed == "High"]) / nrow(shark.data.undersample))
+#Calculating proportion of wind direction "Medium" before and after undersampling
+Medium_Wspeed_prop_original    <- (length(shark.data$moonphase[shark.data$binned.DailyAverageWdSpeed == "Medium"]) / nrow(shark.data))
+Medium_Wspeed_prop_undersample <- (length(shark.data.undersample$moonphase[shark.data.undersample$binned.DailyAverageWdSpeed == "Medium"]) / nrow(shark.data.undersample))
+#Calculating proportion of wind direction "Low" before and after undersampling
+Low_Wspeed_prop_original    <- (length(shark.data$moonphase[shark.data$binned.DailyAverageWdSpeed == "Low"]) / nrow(shark.data))
+Low_Wspeed_prop_undersample <- (length(shark.data.undersample$moonphase[shark.data.undersample$binned.DailyAverageWdSpeed == "Low"]) / nrow(shark.data.undersample))
+```
+
+############ Presenting the before and after proportions in a table ##############
+```{r inlcude= FALSE}
+#converting all the variables into matrix
+
+proportional_table <- matrix(c( new_moon_prop_original, new_moon_prop_undersample, full_moon_prop_original, full_moon_prop_undersample, 
+                                firstQ_moon_prop_original, firstQ_moon_prop_undersample, WaningG_moon_prop_original, WaningG_moon_prop_undersample, 
+                                SW_Wdirection_prop_original, SW_Wdirection_prop_undersample,  SSW_Wdirection_prop_original, SSW_Wdirection_prop_undersample, 
+                                WSW_Wdirection_prop_original, WSW_Wdirection_prop_undersample, E_Wdirection_prop_original, E_Wdirection_prop_undersample, 
+                                High_Wspeed_prop_original, High_Wspeed_prop_undersample, Medium_Wspeed_prop_original, Medium_Wspeed_prop_undersample, 
+                                Low_Wspeed_prop_original, Low_Wspeed_prop_undersample ),ncol=2,byrow=TRUE)
+#adding column names to the proportional matrix
+colnames(proportional_table) <- c("Original Proportion","Undersample Proportion")
+#adding row names to the proportional matrix
+rownames(proportional_table) <- c("New Moon","Full Moon","First Quarter","Waning Gibbous", "Wind Direction - SW", "Wind Direction - SSW", "Wind Direction - WSW ","Wind Direction - East", "Wind Direction - High", "Wind Direction - Medium", "Wind Direction - Low")
+#Converting the matrix into table
+proportional_table <- as.table(proportional_table)
+```
+
+displaying the proportional table
+```{r}
+proportional_table
+```
+
+```{r include =FALSE}
+#Merging undersampled records (i.e. attack=No) with records where attack = Yes
+shark.data.attack.yes <- subset(shark.data, shark.data$Attack=="Yes")
+shark.data.undersample <- shark.data.undersample[,-c(1)] #removed extra column which is getting added after writing the file to .csv
+shark.data.modelling <- rbind(shark.data.attack.yes , shark.data.undersample)
+#Writing the merged dataset into csv which would be used for Modelling
+write.csv(shark.data.modelling, file= "shark_attack_modelling_dataset.csv")
+```
+ 
+
+
+
+
+<br>
+<br>
+
+
+#**6. Data Modelling Plan**
+Cross-Validation technique will be applied on the dataset to divide it among training and test dataset. The target variable for Shark Attack is a categorical value. Therefore, different classification algorithms like decision trees and k nearest neighbour will be applied on for training the model. Results for both the models will then be evaluated and the best model will be selected for prediction. Depending on the detail of this analysis, clustering and association rules can be touched along with classification methods.
+
+##**6.1 Data Partitioning**
+
+```{r inlcude= FALSE}
+shark.data.modelling$Wd.Direction <- factor(shark.data.modelling$Wd.Direction)
+shark.data.modelling$Attack <- factor(shark.data.modelling$Attack)
+shark.data.modelling$moonphase <- factor(shark.data.modelling$moonphase)
+```
+
+```{r}
+library(caret)
+train.rows <- createDataPartition(y= shark.data.modelling$Attack, p=0.75, list = FALSE)
+train.data <- shark.data.modelling[train.rows,]
+table(train.data$Attack)
+test.data <- shark.data.modelling[-train.rows,]
+table(test.data$Attack)
+str(shark.data.modelling)
+```
+
+<br>
+<br>
+
+#**7. Data Modelling**
+
+For our modeling we tested using cross validation, but as it turns out the results varied only by a few percent for each split. This may be due in part to the fact that we chose to only use three splits, because our undersampled dataset is not that large and splitting it too much may remove some of the classes. Consequently, we only use a simple train/test split for our modeling here.
+
+We did find that the model results varied a lot, around 10%, based on the random undersampling of the main dataset. Even though we checked that the undersampled dataset was representative of the main one it still produced widely variable results. To combat this further research may want to investigate alternative methods of balancing a dataset such as oversampling or creating synthetic samples.
+
+##**7.1 Random Forest and Decision Tree**
+
+```{r, include=FALSE}
+#Import Libraries
+if(!require(caret)) install.packages("caret",repos = "http://cran.us.r-project.org")
+if(!require(randomForest)) install.packages("randomForest",repos = "http://cran.us.r-project.org")
+if(!require(pROC)) install.packages("pROC",repos = "http://cran.us.r-project.org")
+if(!require(WVPlots)) install.packages("WVPlots",repos = "http://cran.us.r-project.org")
+if(!require(rpart)) install.packages("WVPlots",repos = "http://cran.us.r-project.org")
+if(!require(rpart.plot)) install.packages("WVPlots",repos = "http://cran.us.r-project.org")
+library(caret)
+library(randomForest)
+library(pROC)
+library(WVPlots)
+library(rpart)
+library(rpart.plot)
+```
+
+```{r, include=FALSE}
+#importing, undersampling, and creating train test split
+#remove code as needed
+#shark.data <- read.csv(file="shark_attack_final_dataset.csv", header=T, na.strings = c("NA",""," "), stringsAsFactors = F)
+#shark.data <- read.csv(file="shark_attack_final_dataset.csv", header=T, na.strings = c("NA",""," "), stringsAsFactors = F)
+#shark.data$Wd.Direction <- factor(shark.data$Wd.Direction)
+#shark.data$Attack <- factor(shark.data$Attack)
+#shark.data$moonphase <- factor(shark.data$moonphase)
+#shark.data.small <- shark.data[-sample(which(shark.data$Attack == "No"), 200),]
+#table(shark.data.small$Attack)
+#train.rows <- createDataPartition(y= shark.data.small$Attack, p=0.7, list = FALSE)
+#train.data <- shark.data.small[train.rows,]
+#table(train.data$Attack)
+#test.data <- shark.data.small[-train.rows,]
+#table(test.data$Attack)
+#str(shark.data.small)
+
+
+```
+
+We are going to use a random forest for our predictions as it is a more accurate ensemble emthod for decision trees, but first we will look at the structure of one decision tree to get an idea of how the data is being split. We train a decision tree using moonphase, wind speed, and wind direction to predict shark attacks. We chose these values based on domain knowledge as well as the fact that our data is taken from the summer months so temperature and precipitation do no vary enough to contribute to our model. We also tested binned and transformed versions of these variables, but none of those variations increased the accuracy.
+
+```{r}
+tree <- rpart(Attack ~ Wd.Direction + moonphase + DailyAverageWdSpeed, data = train.data, method = "class")
+rpart.plot(tree)
+```
+
+From the tree it looks like wind speed is the most important characteristic.
+
+***
+
+Now we will use those same features to train a random forest. We then examine the model and also check which of the predictors is most important to the classification.
+
+```{r}
+rf_classifier = randomForest(Attack ~ Wd.Direction + moonphase + DailyAverageWdSpeed, data=train.data, ntree=100, mtry=2, importance=TRUE)
+rf_classifier
+varImpPlot(rf_classifier)
+```
+
+Then we test our forest by classifying new data. To check our accuracy we look at a confusion matrix, gain curve plot, ROC plot, and AUC.
+
+```{r}
+test.data$forest.pred <- predict(rf_classifier, test.data)
+confusionMatrix(test.data$Attack, test.data$forest.pred, positive = "Yes")
+GainCurvePlot(test.data, "forest.pred", "Attack", "Gain Curve for Random Forest")
+test.data$forest.pred.prob <- predict(rf_classifier, test.data, type= "prob")
+plot(roc(test.data$Attack, test.data$forest.pred.prob[,1]))
+auc(as.numeric(test.data$Attack), test.data$forest.pred.prob[,1])
+```
+
+The results indicate that the classifications are fairly accurate with no glaring issues. The model does predict  the 'no' class a little too often, bu this is likely a result of the dataset more than anything else.
+
+<br>
+
+##**7.2 Logistic Regression**
+
+Next we train a logistic regression model using the same predictors and examine the fit.
+
+```{r}
+glm.fit <- glm(Attack ~ Wd.Direction + moonphase + DailyAverageWdSpeed, data = train.data, family = binomial)
+summary(glm.fit)
+```
+
+We then classify new data and examine the same three metrics: confustion matrix, gain curve plot, ROC plot, and AUC.
+
+```{r}
+test.data$logistic.pred <- predict(glm.fit, newdata = test.data, type = "response")
+test.data$logistic.pred <- ifelse(test.data$logistic.pred >= 0.5, "Yes", "No")
+test.data$logistic.pred <- factor(test.data$logistic.pred)
+confusionMatrix(test.data$Attack, test.data$logistic.pred, positive = "Yes")
+GainCurvePlot(test.data, "logistic.pred", "Attack", "Gain Curve for Logistic Regression")
+plot(roc(test.data$Attack, as.numeric(test.data$logistic.pred)))
+auc(test.data$Attack, as.numeric(test.data$logistic.pred))
+```
+
+The performance is fairly similar to the random forest with good performance with a slight bias toward 'no' predictions.
+
+##**7.3 Association Rules**
+The association rules on moonphase, binned wind speed, and wind direction are applied using rattle.We chose these values based on domain knowledge as well as the fact that our data is taken from the summer months so temperature and precipitation do no vary enough to contribute to the association rules. The modeling method was employed using the apriori algorithm in order to find the best rules for consequent Attack = Yes.
+
+<center>
+![](Capture1.png)
+</center><br><br>
+
+**Rules Obtained with 100% confidence**
+<center>
+![](Capture2.png)
+</center><br><br>
+
+#**8. Model Evaluation Summary**
+As we can see from the below statistics, Random Forest best fits the Shark data.
+```{r echo = FALSE, results = 'asis'}
+library(knitr)
+proportional_table <- matrix(c( "0.8413", "0.9206", "0.7778","0.7937","0.9032","0.6842"),ncol=3,byrow=TRUE)
+#adding column names to the proportional matrix
+colnames(proportional_table) <- c("Area Under Curve", "Specificity", "Sensitivity")
+#adding row names to the proportional matrix
+rownames(proportional_table) <- c("Random Forest","Logistic Regression")
+proportional_table <- as.table(proportional_table)
+kable(proportional_table, caption ="Summary")
+```
+
+
+#**9. Conclusion and Deployment Recomendations**
+Based on the good performance of these classifiers, the models could easily be combined with a stream of realtime weather data to accurately predict when shark attacks may occur. The biggest caveat to this is that the current data only contains information on actual shark attacks, it does not indicate any times when there may have been sharks near the shore, but there were no people in the water or the shark was spotted so people left the water. Expanding the dataset to include this information would dramatically increase the predictive ability of our models as it would provide the target variable we are really trying to predict, the presence of sharks, not just a symptom of it with their attacks.
+
+Additional research could also be conducted in the area of data balancing. As mentioned in the beginning of the data modeling section, random undersampling caused a large variance in model results. If it is impossible to find additional data to better balance the classes then investigating alternate means of balancing data could potentially provide even more accurate results.
